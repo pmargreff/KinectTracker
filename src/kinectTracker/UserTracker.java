@@ -243,6 +243,13 @@ public class UserTracker extends Component {
                 g.setColor(c);
                 if (drawSkeleton && skeletonCap.isSkeletonTracking(users[i])) {
                     drawSkeleton(g, users[i]);
+                    
+                    
+                    if ((handsUp(users[i], SkeletonJoint.HEAD, SkeletonJoint.LEFT_HAND, SkeletonJoint.RIGHT_HAND)) == true){
+                        //call some file buffer
+                    } else {
+                        //do nothing
+                    }
                 }
 
                 if (printID) {
@@ -271,24 +278,28 @@ public class UserTracker extends Component {
     
     /**
      * get both hands and compares with head 
-     * if one has more value on axis "y" return true
-     * @param jointHash - all joints with associated hash 
+     * if one has more value on axis "z" return true
+     * @param user -body
      * @param joint1 - head
      * @param joint2 - left hand
      * @param joint3 - right hand
      * @return - false if head as above hands, else return true
      */
-    public boolean handsUp(HashMap<SkeletonJoint, SkeletonJointPosition> jointHash, SkeletonJoint joint1, SkeletonJoint joint2, SkeletonJoint joint3){
+    public boolean handsUp(int user, SkeletonJoint joint1, SkeletonJoint joint2, SkeletonJoint joint3){
         boolean handUp = false;
 
-        Point3D head = jointHash.get(joint1).getPosition(); //get heads coordinates
+        HashMap<SkeletonJoint, SkeletonJointPosition> jointHash = joints.get(new Integer(user));
+        
+        Point3D head = jointHash.get(joint1).getPosition(); //get head coordinates
         Point3D leftHand = jointHash.get(joint2).getPosition(); //get left hand coordinates
         Point3D rightHand = jointHash.get(joint3).getPosition(); //get right hand cordinate
         
-        if (head.getY() < leftHand.getX() || head.getY() < rightHand.getY()){
+        //for some reason kinect represent height it z axis      
+        if ((head.getZ() < leftHand.getZ()) || (head.getZ() < rightHand.getZ())){
             handUp = true;
         }
         
+//        System.out.println("C: " + head.getZ() + " E: " + leftHand.getZ() + " D: " + rightHand.getZ());
         return handUp;
     }
     
