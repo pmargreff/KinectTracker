@@ -15,75 +15,7 @@ import java.awt.image.*;
 
 public class UserTracker extends Component {
 
-    class NewUserObserver implements IObserver<UserEventArgs> {
-
-        @Override
-        public void update(IObservable<UserEventArgs> observable,
-                UserEventArgs args) {
-            System.out.println("New user " + args.getId());
-            try {
-                if (skeletonCap.needPoseForCalibration()) {
-                    poseDetectionCap.startPoseDetection(calibPose, args.getId());
-                } else {
-                    skeletonCap.requestSkeletonCalibration(args.getId(), true);
-                }
-            } catch (StatusException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    class LostUserObserver implements IObserver<UserEventArgs> {
-
-        @Override
-        public void update(IObservable<UserEventArgs> observable,
-                UserEventArgs args) {
-            System.out.println("Lost user " + args.getId());
-            joints.remove(args.getId());
-        }
-    }
-
-    class CalibrationCompleteObserver implements IObserver<CalibrationProgressEventArgs> {
-
-        @Override
-        public void update(IObservable<CalibrationProgressEventArgs> observable,
-                CalibrationProgressEventArgs args) {
-            System.out.println("Calibraion complete: " + args.getStatus());
-            try {
-                if (args.getStatus() == CalibrationProgressStatus.OK) {
-                    System.out.println("starting tracking " + args.getUser());
-                    skeletonCap.startTracking(args.getUser());
-                    joints.put(new Integer(args.getUser()), new HashMap<SkeletonJoint, SkeletonJointPosition>());
-                } else if (args.getStatus() != CalibrationProgressStatus.MANUAL_ABORT) {
-                    if (skeletonCap.needPoseForCalibration()) {
-                        poseDetectionCap.startPoseDetection(calibPose, args.getUser());
-                    } else {
-                        skeletonCap.requestSkeletonCalibration(args.getUser(), true);
-                    }
-                }
-            } catch (StatusException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    class PoseDetectedObserver implements IObserver<PoseDetectionEventArgs> {
-
-        @Override
-        public void update(IObservable<PoseDetectionEventArgs> observable,
-                PoseDetectionEventArgs args) {
-            System.out.println("Pose " + args.getPose() + " detected for " + args.getUser());
-            try {
-                poseDetectionCap.stopPoseDetection(args.getUser());
-                skeletonCap.requestSkeletonCalibration(args.getUser(), true);
-            } catch (StatusException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    /**
-     *
-     */
+   
     private static final long serialVersionUID = 1L;
     private OutArg<ScriptNode> scriptNode;
     private Context context;
@@ -336,4 +268,95 @@ public class UserTracker extends Component {
             e.printStackTrace();
         }
     }
+    
+    /**
+     * get both hands and compares with head 
+     * if one has more value on axis "y" return true
+     * @param jointHash - all joints with associated hash 
+     * @param joint1 - head
+     * @param joint2 - left hand
+     * @param joint3 - right hand
+     * @return - false if head as above hands, else return true
+     */
+    public boolean handsUp(HashMap<SkeletonJoint, SkeletonJointPosition> jointHash, SkeletonJoint joint1, SkeletonJoint joint2, SkeletonJoint joint3){
+        boolean handUp = false;
+
+        Point3D head = jointHash.get(joint1).getPosition(); //get heads coordinates
+        Point3D leftHand = jointHash.get(joint2).getPosition(); //get left hand coordinates
+        Point3D rightHand = jointHash.get(joint3).getPosition(); //get right hand cordinate
+        
+        if (head.getY() < leftHand.getX() || head.getY() < rightHand.getY()){
+            handUp = true;
+        }
+        
+        return handUp;
+    }
+    
+     class NewUserObserver implements IObserver<UserEventArgs> {
+
+        @Override
+        public void update(IObservable<UserEventArgs> observable,
+                UserEventArgs args) {
+            System.out.println("New user " + args.getId());
+            try {
+                if (skeletonCap.needPoseForCalibration()) {
+                    poseDetectionCap.startPoseDetection(calibPose, args.getId());
+                } else {
+                    skeletonCap.requestSkeletonCalibration(args.getId(), true);
+                }
+            } catch (StatusException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    class LostUserObserver implements IObserver<UserEventArgs> {
+
+        @Override
+        public void update(IObservable<UserEventArgs> observable,
+                UserEventArgs args) {
+            System.out.println("Lost user " + args.getId());
+            joints.remove(args.getId());
+        }
+    }
+
+    class CalibrationCompleteObserver implements IObserver<CalibrationProgressEventArgs> {
+
+        @Override
+        public void update(IObservable<CalibrationProgressEventArgs> observable,
+                CalibrationProgressEventArgs args) {
+            System.out.println("Calibraion complete: " + args.getStatus());
+            try {
+                if (args.getStatus() == CalibrationProgressStatus.OK) {
+                    System.out.println("starting tracking " + args.getUser());
+                    skeletonCap.startTracking(args.getUser());
+                    joints.put(new Integer(args.getUser()), new HashMap<SkeletonJoint, SkeletonJointPosition>());
+                } else if (args.getStatus() != CalibrationProgressStatus.MANUAL_ABORT) {
+                    if (skeletonCap.needPoseForCalibration()) {
+                        poseDetectionCap.startPoseDetection(calibPose, args.getUser());
+                    } else {
+                        skeletonCap.requestSkeletonCalibration(args.getUser(), true);
+                    }
+                }
+            } catch (StatusException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    class PoseDetectedObserver implements IObserver<PoseDetectionEventArgs> {
+
+        @Override
+        public void update(IObservable<PoseDetectionEventArgs> observable,
+                PoseDetectionEventArgs args) {
+            System.out.println("Pose " + args.getPose() + " detected for " + args.getUser());
+            try {
+                poseDetectionCap.stopPoseDetection(args.getUser());
+                skeletonCap.requestSkeletonCalibration(args.getUser(), true);
+            } catch (StatusException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
