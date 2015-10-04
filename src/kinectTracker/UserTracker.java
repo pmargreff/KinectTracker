@@ -12,10 +12,11 @@ import java.util.HashMap;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class UserTracker extends Component {
 
-   
     private static final long serialVersionUID = 1L;
     private OutArg<ScriptNode> scriptNode;
     private Context context;
@@ -36,6 +37,8 @@ public class UserTracker extends Component {
 
     private BufferedImage bimg;
     int width, height;
+
+    RequestAPI deviceStatus;
 
     private final String SAMPLE_XML_FILE = "Config/SamplesConfig.xml";
 
@@ -69,6 +72,8 @@ public class UserTracker extends Component {
             skeletonCap.setSkeletonProfile(SkeletonProfile.ALL);
 
             context.startGeneratingAll();
+            deviceStatus = new RequestAPI();
+
         } catch (GeneralException e) {
             e.printStackTrace();
             System.exit(1);
@@ -238,17 +243,31 @@ public class UserTracker extends Component {
             int[] users = userGen.getUsers();
             for (int i = 0; i < users.length; ++i) {
                 String handStatus = null;
-               
+
                 Color c = colors[users[i] % colors.length];
                 c = new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
 
                 g.setColor(c);
                 if (drawSkeleton && skeletonCap.isSkeletonTracking(users[i])) {
                     drawSkeleton(g, users[i]);
-                    
-                    
-                    if ((handsUp(users[i], SkeletonJoint.HEAD, SkeletonJoint.LEFT_HAND, SkeletonJoint.RIGHT_HAND)) == true){
-                         handStatus = "Raised hand!!!";
+
+                    if ((handsUp(users[i], SkeletonJoint.HEAD, SkeletonJoint.LEFT_HAND, SkeletonJoint.RIGHT_HAND)) == true) {
+                        handStatus = "Raised hand!!!";
+
+                        if (deviceStatus.getStatus() == true) {
+                            deviceStatus.setStatus(false);
+                            deviceStatus.sendData(false);
+//                            System.out.println("Request true");
+                        } else {
+                            deviceStatus.setStatus(true);
+                            deviceStatus.sendData(true);
+                        }
+
+                        try {
+                            Thread.sleep(1000);                 //stopped for 1000 milliseconds = 1 second
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
                     } else {
                         handStatus = "Hand down!";
                     }
@@ -271,44 +290,44 @@ public class UserTracker extends Component {
                     }
 
                     g.drawString(label, (int) com.getX(), (int) com.getY());
-                    
-                    if (handStatus != null){
+
+                    if (handStatus != null) {
                         g.drawString(handStatus, 30, 30);
                     }
                 }
             }
         } catch (StatusException e) {
             e.printStackTrace();
+        } catch (Exception ex) {
+            Logger.getLogger(UserTracker.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
     /**
-     * get both hands and compares with head 
-     * if one has more value on axis "z" return true
+     * get both hands and compares with head if one has more value on axis "z"
+     * return true
+     *
      * @param user -body
      * @param joint1 - head
      * @param joint2 - left hand
      * @param joint3 - right hand
      * @return - false if head as above hands, else return true
      */
-    public boolean handsUp(int user, SkeletonJoint joint1, SkeletonJoint joint2, SkeletonJoint joint3){
+    public boolean handsUp(int user, SkeletonJoint joint1, SkeletonJoint joint2, SkeletonJoint joint3) {
         boolean handUp = false;
 
         HashMap<SkeletonJoint, SkeletonJointPosition> jointHash = joints.get(new Integer(user));
-        
+
         Point3D head = jointHash.get(joint1).getPosition(); //get head coordinates
         Point3D leftHand = jointHash.get(joint2).getPosition(); //get left hand coordinates
         Point3D rightHand = jointHash.get(joint3).getPosition(); //get right hand cordinate
-        
+
         //for some reason kinect represent height it z axis      
-        if ((head.getZ() < leftHand.getZ()) || (head.getZ() < rightHand.getZ())){
+        if ((head.getZ() < leftHand.getZ()) || (head.getZ() < rightHand.getZ())) {
             handUp = true;
         }
-        
-//        System.out.println("C: " + head.getZ() + " E: " + leftHand.getZ() + " D: " + rightHand.getZ());
         return handUp;
     }
-    
+
     class NewUserObserver implements IObserver<UserEventArgs> {
 
         @Override
