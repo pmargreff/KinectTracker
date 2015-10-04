@@ -237,6 +237,8 @@ public class UserTracker extends Component {
         try {
             int[] users = userGen.getUsers();
             for (int i = 0; i < users.length; ++i) {
+                String handStatus = null;
+               
                 Color c = colors[users[i] % colors.length];
                 c = new Color(255 - c.getRed(), 255 - c.getGreen(), 255 - c.getBlue());
 
@@ -246,9 +248,9 @@ public class UserTracker extends Component {
                     
                     
                     if ((handsUp(users[i], SkeletonJoint.HEAD, SkeletonJoint.LEFT_HAND, SkeletonJoint.RIGHT_HAND)) == true){
-                        //call some file buffer
+                         handStatus = "Raised hand!!!";
                     } else {
-                        //do nothing
+                        handStatus = "Hand down!";
                     }
                 }
 
@@ -269,6 +271,10 @@ public class UserTracker extends Component {
                     }
 
                     g.drawString(label, (int) com.getX(), (int) com.getY());
+                    
+                    if (handStatus != null){
+                        g.drawString(handStatus, 30, 30);
+                    }
                 }
             }
         } catch (StatusException e) {
@@ -303,7 +309,7 @@ public class UserTracker extends Component {
         return handUp;
     }
     
-     class NewUserObserver implements IObserver<UserEventArgs> {
+    class NewUserObserver implements IObserver<UserEventArgs> {
 
         @Override
         public void update(IObservable<UserEventArgs> observable,
